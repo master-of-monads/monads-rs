@@ -1,4 +1,4 @@
-use super::{Applicative, Functor, Monad};
+use super::{ret, Applicative, Functor, Monad};
 
 /// Simple logging monad.
 struct Logging<A> {
@@ -88,7 +88,7 @@ mod tests {
 							Logging::log(format!("Logging iteration: {i}"))
 						})
 					})
-					.bind(|_| return Logging::pure(2))
+					.bind(|_| ret(2))
 			})
 		})
 	}
