@@ -1,14 +1,14 @@
-use super::{ret, Applicative, Functor, Monad};
+use super::{Applicative, Functor, Monad};
 
 /// Simple logging monad.
-struct Logging<A> {
+pub struct Logging<A> {
 	value: A,
 	log: Vec<String>,
 }
 
 impl Logging<()> {
 	/// Logs a singled message `msg`.
-	fn log<M: ToString>(msg: M) -> Self {
+	pub fn log<M: ToString>(msg: M) -> Self {
 		Self {
 			value: (),
 			log: vec![msg.to_string()],
@@ -18,7 +18,7 @@ impl Logging<()> {
 
 impl<A> Logging<A> {
 	/// Collects all logs and returns the computed value.
-	fn run(&self) -> (&A, Vec<String>) {
+	pub fn run(&self) -> (&A, Vec<String>) {
 		(&self.value, self.log.clone())
 	}
 }
@@ -70,8 +70,8 @@ impl<A> Monad<A> for Logging<A> {
 
 #[cfg(test)]
 mod tests {
-
 	use super::*;
+	use crate::ret;
 
 	/// Logs the path of the function, and returns a value.
 	fn log_function(a: bool) -> Logging<i32> {

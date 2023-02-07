@@ -1,4 +1,4 @@
-use super::{ret, Applicative, Functor, Monad};
+use super::{Applicative, Functor, Monad};
 
 impl<A> Functor<A> for Option<A> {
 	type Map<B> = Option<B>;
@@ -31,6 +31,8 @@ impl<A> Monad<A> for Option<A> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::ret;
+
 	#[test]
 	fn pure_test() {
 		let val: Option<i32> = ret(42);

@@ -1,6 +1,8 @@
-mod logging;
+pub mod logging;
 mod option;
 mod result;
+
+pub use monads_rs_codegen::*;
 
 pub use option::*;
 pub use result::*;
