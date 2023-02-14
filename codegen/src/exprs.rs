@@ -2,10 +2,11 @@ use std::collections::VecDeque;
 
 use proc_macro2::{Ident, Span};
 use syn::{
-	fold::{fold_expr, Fold},
-	parse_quote,
+	fold::{fold_expr, fold_expr_if, Fold},
+	parse_quote, parse_quote_spanned,
 	spanned::Spanned,
-	Block, Expr, ExprClosure, ExprPath, ExprTry, Pat, PatIdent,
+	token::Else,
+	Block, Expr, ExprClosure, ExprIf, ExprPath, ExprTry, Pat, PatIdent,
 };
 
 use crate::{blocks::bind_in_block, locals::build_monadic_bind};
@@ -60,10 +61,44 @@ impl ExprBinder {
 	}
 
 	fn handle_try_expr(&mut self, try_expr: ExprTry) -> Expr {
-		let original_span = try_expr.span();
-		let inner_expr = self.fold_expr(*try_expr.expr);
-		let temp_bind = self.add_temp_bind(inner_expr, original_span);
+		let bind_span = try_expr.span();
+		let inner_expr =
+			self.handle_expr_in_try_expr(*try_expr.expr, bind_span);
+		let temp_bind = self.add_temp_bind(inner_expr, bind_span);
 		Expr::Path(temp_bind.ident_as_expr_path())
+	}
+
+	fn handle_expr_in_try_expr(
+		&mut self,
+		mut expr: Expr,
+		bind_span: Span,
+	) -> Expr {
+		match expr {
+			Expr::If(ref mut if_expr) if if_expr.else_branch.is_none() => {
+				let else_expr = parse_quote_spanned! { bind_span =>
+					{
+						::monads_rs::ret(())
+					}
+				};
+				if_expr.else_branch =
+					Some((Else(Span::call_site()), Box::new(else_expr)));
+			}
+			_ => {}
+		}
+
+		self.fold_expr(expr)
+	}
+
+	fn handle_else_branch(&mut self, else_expr: Expr) -> Expr {
+		let Expr::If(else_if) = else_expr else {
+			return else_expr;
+		};
+
+		parse_quote! {
+			{
+				#else_if
+			}
+		}
 	}
 }
 
@@ -75,6 +110,15 @@ impl Fold for ExprBinder {
 	fn fold_expr_closure(&mut self, closure: ExprClosure) -> ExprClosure {
 		// Ignore anything within closures
 		closure
+	}
+
+	fn fold_expr_if(&mut self, mut if_expr: ExprIf) -> ExprIf {
+		if let Some(mut else_branch) = if_expr.else_branch {
+			let else_expr = self.handle_else_branch(*else_branch.1);
+			else_branch.1 = Box::new(else_expr);
+			if_expr.else_branch = Some(else_branch);
+		}
+		fold_expr_if(self, if_expr)
 	}
 
 	fn fold_expr(&mut self, expr: Expr) -> Expr {
