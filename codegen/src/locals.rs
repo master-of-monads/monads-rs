@@ -46,7 +46,7 @@ fn build_monadic_bind(
 	parse_quote! {
 		::monads_rs::Monad::bind(
 			#monadic_expr,
-			|#bind_pattern| #then_block
+			move |#bind_pattern| #then_block
 		)
 	}
 }

@@ -23,11 +23,11 @@ impl<A> Logging<A> {
 	}
 }
 
-impl<A> Functor<A> for Logging<A> {
-	type Map<B> = Logging<B>;
+impl<A: 'static> Functor<A> for Logging<A> {
+	type Map<B: 'static> = Logging<B>;
 
 	/// Applies the function `f` to the value while keeping the logs intact.
-	fn map<B, F: FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
+	fn map<B: 'static, F: 'static + FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
 		Logging {
 			value: f(self.value),
 			log: self.log,
@@ -35,8 +35,8 @@ impl<A> Functor<A> for Logging<A> {
 	}
 }
 
-impl<A> Applicative<A> for Logging<A> {
-	type Apply<B> = Logging<B>;
+impl<A: 'static> Applicative<A> for Logging<A> {
+	type Apply<B: 'static> = Logging<B>;
 
 	/// Creates a new `Logging` with the `value` and an empty log.
 	fn pure(value: A) -> Self {
@@ -48,19 +48,19 @@ impl<A> Applicative<A> for Logging<A> {
 
 	/// Uses the `value` of `f` as a function for mapping the `value` of
 	/// `self`. The logs of `f` are appended to the logs of `self`.
-	fn ap<B, F: FnOnce(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
+	fn ap<B: 'static, F: 'static + FnMut(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
 		let mut next = self.map(f.value);
 		next.log.append(&mut f.log);
 		next
 	}
 }
 
-impl<A> Monad<A> for Logging<A> {
-	type Bind<B> = Logging<B>;
+impl<A: 'static> Monad<A> for Logging<A> {
+	type Bind<B: 'static> = Logging<B>;
 
 	/// Applies the function `f` to the value, making sure the logs are a
 	/// continuation of the logs of `self`.
-	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(mut self, f: F) -> Self::Bind<B> {
+	fn bind<B: 'static, F: 'static + FnOnce(A) -> Self::Bind<B>>(mut self, f: F) -> Self::Bind<B> {
 		let mut next = f(self.value);
 		self.log.append(&mut next.log);
 		next.log = self.log;
@@ -75,17 +75,19 @@ mod tests {
 
 	/// Logs the path of the function, and returns a value.
 	fn log_function(a: bool) -> Logging<i32> {
-		Logging::log("Enter function").bind(|_| {
+		let mut count = 0;
+		Logging::log("Enter function").bind(move |_| {
 			if a {
 				Logging::log("If statement A")
 			} else {
 				Logging::log("If statement B")
 			}
-			.bind(|_| {
+			.bind(move |_| {
 				(1..4)
 					.fold(Logging::pure(()), |b, i| {
-						b.bind(|_| {
-							Logging::log(format!("Logging iteration: {i}"))
+						b.bind(move |_| {
+							count += 1;
+							Logging::log(format!("Logging iteration: {i} ({count})"))
 						})
 					})
 					.bind(|_| ret(2))
