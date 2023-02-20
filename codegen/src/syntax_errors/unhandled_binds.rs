@@ -1,6 +1,6 @@
 use syn::{
 	fold::{fold_expr, fold_item_fn, Fold},
-	Error, Expr, Item, ItemFn,
+	Error, Expr, ExprClosure, Item, ItemFn,
 };
 
 /// Outputs a diagnostics error for all binds (`?`)
@@ -30,6 +30,11 @@ impl Fold for BindReporter {
 		} else {
 			fold_expr(self, expr)
 		}
+	}
+
+	fn fold_expr_closure(&mut self, closure: ExprClosure) -> ExprClosure {
+		// Ignore anything within closures
+		closure
 	}
 
 	fn fold_item(&mut self, item: Item) -> Item {

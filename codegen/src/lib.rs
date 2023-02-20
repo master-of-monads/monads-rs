@@ -1,4 +1,5 @@
 mod blocks;
+mod exprs;
 mod locals;
 mod syntax_errors;
 
