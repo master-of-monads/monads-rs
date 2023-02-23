@@ -1,4 +1,4 @@
-use super::{Applicative, Functor, Monad};
+use super::Monad;
 
 /// Simple logging monad.
 pub struct Logging<A> {
@@ -23,44 +23,23 @@ impl<A> Logging<A> {
 	}
 }
 
-impl<A> Functor<A> for Logging<A> {
-	type Map<B> = Logging<B>;
+impl<A> Monad for Logging<A> {
+	type Item = A;
+	type Output<B> = Logging<B>;
 
-	/// Applies the function `f` to the value while keeping the logs intact.
-	fn map<B, F: FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
+	fn ret<AA>(a: AA) -> Logging<AA> {
 		Logging {
-			value: f(self.value),
-			log: self.log,
-		}
-	}
-}
-
-impl<A> Applicative<A> for Logging<A> {
-	type Apply<B> = Logging<B>;
-
-	/// Creates a new `Logging` with the `value` and an empty log.
-	fn pure(value: A) -> Self {
-		Logging {
-			value,
+			value: a,
 			log: Vec::new(),
 		}
 	}
 
-	/// Uses the `value` of `f` as a function for mapping the `value` of
-	/// `self`. The logs of `f` are appended to the logs of `self`.
-	fn ap<B, F: FnOnce(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
-		let mut next = self.map(f.value);
-		next.log.append(&mut f.log);
-		next
-	}
-}
-
-impl<A> Monad<A> for Logging<A> {
-	type Bind<B> = Logging<B>;
-
 	/// Applies the function `f` to the value, making sure the logs are a
 	/// continuation of the logs of `self`.
-	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(mut self, f: F) -> Self::Bind<B> {
+	fn bind<B, F: FnOnce(A) -> Self::Output<B>>(
+		mut self,
+		f: F,
+	) -> Self::Output<B> {
 		let mut next = f(self.value);
 		self.log.append(&mut next.log);
 		next.log = self.log;
@@ -83,12 +62,12 @@ mod tests {
 			}
 			.bind(|_| {
 				(1..4)
-					.fold(Logging::pure(()), |b, i| {
+					.fold(ret::<_, Logging<_>>(()), |b: Logging<_>, i| {
 						b.bind(|_| {
 							Logging::log(format!("Logging iteration: {i}"))
 						})
 					})
-					.bind(|_| ret(2))
+					.bind(|_| ret::<_, Logging<_>>(2))
 			})
 		})
 	}

@@ -14,10 +14,10 @@ fn startup_nuclear_reactor() -> Logging<bool> {
 
 	if core_temp < 200.0 {
 		Logging::log("Reactor core temperature is nominal")?;
-		ret(true)
+		ret::<_, Logging<_>>(true)
 	} else {
 		Logging::log("Reactor core is too hot, abort")?;
-		ret(false)
+		ret::<_, Logging<_>>(false)
 	}
 }
 
@@ -25,13 +25,13 @@ fn startup_nuclear_reactor() -> Logging<bool> {
 fn run_safety_checks() -> Logging<()> {
 	Logging::log("Running safety checks...")?;
 	Logging::log("All is OK")?;
-	ret(())
+	ret::<_, Logging<_>>(())
 }
 
 #[monadic]
 fn activate_warning_lights() -> Logging<()> {
 	Logging::log("Warning lights activated")?;
-	ret(())
+	ret::<_, Logging<_>>(())
 }
 
 #[monadic]
@@ -45,5 +45,5 @@ fn get_core_temp() -> Logging<f32> {
 			40.0 + (i as f32)
 		))?;
 	}
-	ret(core_temp_arg / 4.0)
+	ret::<_, Logging<_>>(core_temp_arg / 4.0)
 }

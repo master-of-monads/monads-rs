@@ -1,29 +1,14 @@
-use super::{Applicative, Functor, Monad};
+use super::Monad;
 
-impl<A, E> Functor<A> for Result<A, E> {
-	type Map<B> = Result<B, E>;
+impl<A, E> Monad for Result<A, E> {
+	type Item = A;
+	type Output<B> = Result<B, E>;
 
-	fn map<B, F: FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
-		self.map(f)
-	}
-}
-
-impl<A, E> Applicative<A> for Result<A, E> {
-	type Apply<B> = Result<B, E>;
-
-	fn pure(a: A) -> Self {
-		Ok(a)
+	fn ret<AA>(a: AA) -> Result<AA, E> {
+		Result::Ok(a)
 	}
 
-	fn ap<B, F: FnOnce(A) -> B>(self, f: Self::Apply<F>) -> Self::Apply<B> {
-		self.and_then(|a| f.map(|f| f(a)))
-	}
-}
-
-impl<A, E> Monad<A> for Result<A, E> {
-	type Bind<B> = Result<B, E>;
-
-	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
+	fn bind<B, F: FnOnce(A) -> Self::Output<B>>(self, f: F) -> Self::Output<B> {
 		self.and_then(f)
 	}
 }
@@ -35,14 +20,14 @@ mod tests {
 
 	#[test]
 	fn pure_test() {
-		let val: Result<i32, &'static str> = ret(42);
+		let val: Result<i32, &'static str> = ret::<_, Result<_, _>>(42);
 		assert_eq!(val, Ok(42))
 	}
 
 	#[test]
 	fn binding() {
-		let val: Result<i32, &'static str> = ret(42);
-		let result = val.bind(|v| ret(v + 1));
+		let val: Result<i32, &'static str> = ret::<_, Result<_, _>>(42);
+		let result = val.bind(|v| ret::<_, Result<_, _>>(v + 1));
 		assert_eq!(result, Ok(43))
 	}
 
@@ -50,13 +35,13 @@ mod tests {
 	fn short_curcuit() {
 		fn meaning_of_life(v: i32) -> Result<i32, &'static str> {
 			if v == 42 {
-				ret(42)
+				ret::<_, Result<_, _>>(42)
 			} else {
 				return Err("That answer is not the meaning of life");
 			}
 		}
 
-		let val: Result<i32, &'static str> = ret(43);
+		let val: Result<i32, &'static str> = ret::<_, Result<_, _>>(43);
 		let result = val.bind(meaning_of_life);
 		assert!(result.is_err())
 	}

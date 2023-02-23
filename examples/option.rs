@@ -10,10 +10,10 @@ fn main() {
 
 #[monadic]
 fn aggregate_sensor_readings() -> Option<f32> {
-	ret((read_unreliable_sensor()? + read_unreliable_sensor()?) / 2.0)
+	ret::<_, Option<_>>((read_unreliable_sensor()? + read_unreliable_sensor()?) / 2.0)
 }
 
 #[monadic]
 fn read_unreliable_sensor() -> Option<f32> {
-	ret(42.0)
+	ret::<_, Option<_>>(42.0)
 }
