@@ -1,11 +1,20 @@
 use std::collections::VecDeque;
 
 use syn::{
+	parse_quote_spanned,
+	spanned::Spanned,
 	token::{Brace, Semi},
-	Block, Expr, Stmt,
+	Block, Expr, ItemFn, Stmt,
 };
 
 use crate::{exprs::bind_expr, locals::bind_local_declaration};
+
+pub(crate) fn bind_in_function(mut function: ItemFn) -> ItemFn {
+	let mut block = bind_in_block(*function.block);
+	block.stmts = bind_implicit_returns(block.stmts.into()).into();
+	function.block = Box::new(block);
+	function
+}
 
 pub(crate) fn bind_in_block(mut block: Block) -> Block {
 	move_up_item_declarations(&mut block.stmts);
@@ -66,7 +75,6 @@ fn bind_stmt_and_restore(
 	remaining_stmts: VecDeque<Stmt>,
 ) -> VecDeque<Stmt> {
 	let mut rest = bind_statements(remaining_stmts);
-
 	let (binder, bound_expr) = bind_expr(expr);
 	rest.push_front(restore(bound_expr));
 
@@ -78,7 +86,20 @@ fn bind_stmt_and_restore(
 		brace_token: Brace::default(),
 		stmts: rest.into(),
 	};
-	let stmt_expr = binder.build_binds(then_block);
-	let stmts = vec![Stmt::Expr(stmt_expr)];
-	stmts.into()
+	let then_block = binder.build_binds(then_block);
+	then_block.stmts.into()
+}
+
+fn bind_implicit_returns(mut stmts: VecDeque<Stmt>) -> VecDeque<Stmt> {
+	for stmt in &mut stmts {
+		if let Stmt::Expr(expr) = stmt {
+			*expr = parse_quote_spanned! { expr.span() =>
+				<::monads_rs::control_flow::ControlFlowAction<
+					_,
+					_,
+				> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#expr)
+			};
+		}
+	}
+	stmts
 }

@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 
-use syn::{parse_quote, token::Brace, Block, Expr, Local, Pat, Stmt};
+use syn::{
+	parse_quote_spanned, spanned::Spanned, token::Brace, Block, Expr, Local,
+	Pat, Stmt,
+};
 
 use crate::{blocks::bind_statements, exprs::bind_expr};
 
@@ -27,20 +30,29 @@ pub(crate) fn bind_local_declaration(
 		brace_token: Brace::default(),
 		stmts: rest.into(),
 	};
-	let stmt_expr = binder.build_binds(then_block);
-	let stmts = vec![Stmt::Expr(stmt_expr)];
-	stmts.into()
+	let then_block = binder.build_binds(then_block);
+	then_block.stmts.into()
 }
 
 pub(crate) fn build_monadic_bind(
 	bind_pattern: &Pat,
 	monadic_expr: &Expr,
-	then_block: &Block,
+	then_block: &mut Block,
 ) -> Expr {
-	parse_quote! {
-		::monads_rs::Monad::bind(
-			#monadic_expr,
-			|#bind_pattern| #then_block
-		)
+	if let Some(Stmt::Expr(expr)) = then_block.stmts.last_mut() {
+		*expr = parse_quote_spanned! { expr.span() =>
+			<::monads_rs::control_flow::ControlFlowAction<
+				_,
+				_,
+			> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#expr)
+		};
+	}
+
+	parse_quote_spanned! { monadic_expr.span() =>
+		<::monads_rs::control_flow::ControlFlowAction<
+			_,
+			_,
+		> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#monadic_expr)
+			.bind(|#bind_pattern| #then_block)
 	}
 }
