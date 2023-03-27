@@ -5,15 +5,12 @@ use syn::{
 	Pat, Stmt,
 };
 
-use crate::{
-	blocks::{bind_statements, Stmts},
-	exprs::bind_expr,
-};
+use crate::{blocks::bind_statements, exprs::bind_expr};
 
 pub(crate) fn bind_local_declaration(
 	mut local: Local,
 	remaining_stmts: VecDeque<Stmt>,
-) -> Stmts {
+) -> VecDeque<Stmt> {
 	let mut rest = bind_statements(remaining_stmts);
 
 	let Some((eq, init_expr)) = local.init else {
@@ -31,10 +28,10 @@ pub(crate) fn bind_local_declaration(
 
 	let then_block = Block {
 		brace_token: Brace::default(),
-		stmts: rest.into_vec(),
+		stmts: rest.into(),
 	};
 	let then_block = binder.build_binds(then_block);
-	Stmts::Monadic(then_block.stmts.into())
+	then_block.stmts.into()
 }
 
 pub(crate) fn build_monadic_bind(

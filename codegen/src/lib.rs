@@ -3,7 +3,7 @@ mod exprs;
 mod locals;
 mod syntax_errors;
 
-use blocks::bind_in_function_block;
+use blocks::bind_in_function;
 use proc_macro2::{Ident, Span};
 use quote::ToTokens;
 use std::mem::take;
@@ -45,7 +45,7 @@ fn duplicate_function(function: &mut ItemFn) -> ItemFn {
 }
 
 fn build_shadow_function(mut function: ItemFn) -> ItemFn {
-	function.block = Box::new(bind_in_function_block(*function.block));
+	function = bind_in_function(function);
 	function.sig.ident = prefix_shadow_function_ident(function.sig.ident);
 	function.sig.output = wrap_return_type_in_control_flow(function.sig.output);
 	function
