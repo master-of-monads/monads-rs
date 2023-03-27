@@ -44,21 +44,24 @@ impl<R> ControlFlowAction<R> {
 	}
 }
 
-pub trait From2<T> {
+pub trait FlatFrom<T> {
 	type Output;
-	fn from2(value: T) -> Self::Output;
+
+	fn flat_from(value: T) -> Self::Output;
 }
 
-impl<R: Monad, E> From2<R> for ControlFlowAction<R, E> {
+impl<R: Monad, E> FlatFrom<R> for ControlFlowAction<R, E> {
 	type Output = ControlFlowAction<R, E>;
-	fn from2(value: R) -> Self::Output {
+
+	fn flat_from(value: R) -> Self::Output {
 		ControlFlowAction::Result(value)
 	}
 }
 
-impl<R, E> From2<ControlFlowAction<R, E>> for ControlFlowAction<R, E> {
+impl<R, E> FlatFrom<ControlFlowAction<R, E>> for ControlFlowAction<R, E> {
 	type Output = ControlFlowAction<R, E>;
-	fn from2(value: ControlFlowAction<R, E>) -> Self::Output {
+
+	fn flat_from(value: ControlFlowAction<R, E>) -> Self::Output {
 		value
 	}
 }
@@ -74,7 +77,7 @@ mod tests {
 		fn bind_nested_implicit_return() -> Option<usize> {
 			fn bind_nested_implicit_return() -> ControlFlowAction<Option<usize>>
 			{
-				ControlFlowAction::from2({
+				ControlFlowAction::flat_from({
 					ControlFlowAction::Result(Some(12))
 				})
 			}
@@ -88,8 +91,10 @@ mod tests {
 
 		fn bind_monadic_block() -> Option<usize> {
 			fn bind_monadic_block() -> ControlFlowAction<Option<usize>> {
-				ControlFlowAction::from2(ControlFlowAction::from2(Some(12)))
-					.bind(|a| ControlFlowAction::from2(Some(a)))
+				ControlFlowAction::flat_from(ControlFlowAction::flat_from(
+					Some(12),
+				))
+				.bind(|a| ControlFlowAction::flat_from(Some(a)))
 			}
 			bind_monadic_block().unwrap()
 		}
@@ -100,20 +105,20 @@ mod tests {
 		assert_eq!(bind_for_other_types_return(), Some(12));
 
 		fn bind_for_other_types_return() -> Option<usize> {
-			ControlFlowAction::from2({
-				ControlFlowAction::from2(Some(true)).bind(|bound_expr| {
+			ControlFlowAction::flat_from({
+				ControlFlowAction::flat_from(Some(true)).bind(|bound_expr| {
 					let _b = bound_expr;
 					return ControlFlowAction::Exit(Some(12));
 					#[allow(unreachable_code)]
-					ControlFlowAction::from2(Some(_b))
+					ControlFlowAction::flat_from(Some(_b))
 				})
 			})
 			.bind(|bound_block| {
 				let b = bound_block;
 				if b {
-					ControlFlowAction::from2(Some(24))
+					ControlFlowAction::flat_from(Some(24))
 				} else {
-					ControlFlowAction::from2(Some(25))
+					ControlFlowAction::flat_from(Some(25))
 				}
 			})
 			.unwrap()

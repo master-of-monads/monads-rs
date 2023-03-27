@@ -117,7 +117,7 @@ fn bind_implicit_returns(mut stmts: VecDeque<Stmt>) -> VecDeque<Stmt> {
 	for stmt in &mut stmts {
 		if let Stmt::Expr(expr) = stmt {
 			*expr = parse_quote_spanned! { expr.span() =>
-				<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::From2<_>>::from2(#expr)
+				<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#expr)
 			};
 		}
 	}

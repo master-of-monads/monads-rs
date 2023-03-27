@@ -44,12 +44,12 @@ pub(crate) fn build_monadic_bind(
 ) -> Expr {
 	if let Some(Stmt::Expr(expr)) = then_block.stmts.last_mut() {
 		*expr = parse_quote_spanned! { expr.span() =>
-			<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::From2<_>>::from2(#expr)
+			<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#expr)
 		};
 	}
 
 	parse_quote_spanned! { monadic_expr.span() =>
-		<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::From2<_>>::from2(#monadic_expr)
+		<::monads_rs::control_flow::ControlFlowAction<_, _> as ::monads_rs::control_flow::FlatFrom<_>>::flat_from(#monadic_expr)
 			.bind(|#bind_pattern| #then_block)
 	}
 }
