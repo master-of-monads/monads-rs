@@ -1,3 +1,4 @@
+#![allow(unreachable_code, unused_braces, unused_variables)]
 use monads_rs::*;
 
 #[test]
@@ -43,6 +44,17 @@ fn bind_before() {
 }
 
 #[test]
+fn bind_before_no_implicit_return() {
+	assert_eq!(bind_bind_before_no_implicit_return(), Some(12));
+
+	#[monadic]
+	fn bind_bind_before_no_implicit_return() -> Option<usize> {
+		let a = Some(12)?;
+		return Some(a);
+	}
+}
+
+#[test]
 fn deep_bind() {
 	assert_eq!(deep_bind_return(), Some(12));
 
@@ -56,6 +68,40 @@ fn deep_bind() {
 		let a = Some(a)?;
 		let a = Some(a)?;
 		let a = Some(a)?;
+		Some(a)
+	}
+}
+
+#[test]
+fn nested_implicit_return() {
+	assert_eq!(bind_nested_implicit_return(), Some(12));
+
+	#[monadic]
+	fn bind_nested_implicit_return() -> Option<usize> {
+		{
+			Some(12)
+		}
+	}
+}
+
+#[test]
+fn monadic_block() {
+	assert_eq!(bind_monadic_block(), Some(12));
+
+	#[monadic]
+	fn bind_monadic_block() -> Option<usize> {
+		let a = { Some(12_usize) }?;
+		Some(a)
+	}
+}
+
+#[test]
+fn non_monadic_block() {
+	assert_eq!(bind_non_monadic_block(), Some(12));
+
+	#[monadic]
+	fn bind_non_monadic_block() -> Option<usize> {
+		let a = { 12 };
 		Some(a)
 	}
 }

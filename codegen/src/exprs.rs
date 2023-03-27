@@ -6,7 +6,8 @@ use syn::{
 	parse_quote, parse_quote_spanned,
 	spanned::Spanned,
 	token::Else,
-	Block, Expr, ExprClosure, ExprIf, ExprPath, ExprTry, Pat, PatIdent,
+	Block, Expr, ExprClosure, ExprIf, ExprPath, ExprReturn, ExprTry, Pat,
+	PatIdent,
 };
 
 use crate::{blocks::bind_in_block, locals::build_monadic_bind};
@@ -23,17 +24,21 @@ pub(crate) struct ExprBinder {
 }
 
 impl ExprBinder {
-	pub(crate) fn build_binds(mut self, then_block: Block) -> Expr {
+	pub(crate) fn build_binds(mut self, then_block: Block) -> Block {
 		if let Some(temp_bind) = self.temp_binds.pop_front() {
-			let then_expr = self.build_binds(then_block);
-			let then_block: Block = parse_quote! { { #then_expr } };
-			build_monadic_bind(
+			let mut then_block = self.build_binds(then_block);
+			let bind_expr = build_monadic_bind(
 				&temp_bind.ident_as_pat(),
 				&temp_bind.monadic_expr,
-				&then_block,
-			)
+				&mut then_block,
+			);
+			parse_quote! {
+				{
+					#bind_expr
+				}
+			}
 		} else {
-			parse_quote! { #then_block }
+			then_block
 		}
 	}
 
@@ -119,6 +124,16 @@ impl Fold for ExprBinder {
 			if_expr.else_branch = Some(else_branch);
 		}
 		fold_expr_if(self, if_expr)
+	}
+
+	fn fold_expr_return(&mut self, mut return_expr: ExprReturn) -> ExprReturn {
+		let Some(expr) = return_expr.expr else { return return_expr };
+		let expr = self.fold_expr(*expr);
+		let expr = parse_quote_spanned! { expr.span() =>
+			::monads_rs::control_flow::ControlFlowAction::Exit(#expr)
+		};
+		return_expr.expr = Some(Box::new(expr));
+		return_expr
 	}
 
 	fn fold_expr(&mut self, expr: Expr) -> Expr {

@@ -20,7 +20,8 @@ impl<A, E> Applicative<A> for Result<A, E> {
 	}
 }
 
-impl<A, E> Monad<A> for Result<A, E> {
+impl<A, E> Monad for Result<A, E> {
+	type Item = A;
 	type Bind<B> = Result<B, E>;
 
 	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {

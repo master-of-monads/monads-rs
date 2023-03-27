@@ -48,14 +48,15 @@ impl<A> Applicative<A> for Logging<A> {
 
 	/// Uses the `value` of `f` as a function for mapping the `value` of
 	/// `self`. The logs of `f` are appended to the logs of `self`.
-	fn ap<B, F: FnOnce(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
+	fn ap<B, F: Fn(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
 		let mut next = self.map(f.value);
 		next.log.append(&mut f.log);
 		next
 	}
 }
 
-impl<A> Monad<A> for Logging<A> {
+impl<A> Monad for Logging<A> {
+	type Item = A;
 	type Bind<B> = Logging<B>;
 
 	/// Applies the function `f` to the value, making sure the logs are a

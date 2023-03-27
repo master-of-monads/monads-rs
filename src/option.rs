@@ -20,7 +20,8 @@ impl<A> Applicative<A> for Option<A> {
 	}
 }
 
-impl<A> Monad<A> for Option<A> {
+impl<A> Monad for Option<A> {
+	type Item = A;
 	type Bind<B> = Option<B>;
 
 	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
