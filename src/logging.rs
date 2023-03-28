@@ -23,7 +23,7 @@ impl<A> Logging<A> {
 	}
 }
 
-impl<A> Functor<A> for Logging<A> {
+impl<'a,A> Functor<'a,A> for Logging<A> {
 	type Map<B> = Logging<B>;
 
 	/// Applies the function `f` to the value while keeping the logs intact.
@@ -35,7 +35,7 @@ impl<A> Functor<A> for Logging<A> {
 	}
 }
 
-impl<A> Applicative<A> for Logging<A> {
+impl<'a,A> Applicative<'a,A> for Logging<A> {
 	type Apply<B> = Logging<B>;
 
 	/// Creates a new `Logging` with the `value` and an empty log.
@@ -55,7 +55,7 @@ impl<A> Applicative<A> for Logging<A> {
 	}
 }
 
-impl<A> Monad<A> for Logging<A> {
+impl<'a,A> Monad<'a,A> for Logging<A> {
 	type Bind<B> = Logging<B>;
 
 	/// Applies the function `f` to the value, making sure the logs are a

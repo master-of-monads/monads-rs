@@ -1,6 +1,6 @@
 use super::{Applicative, Functor, Monad};
 
-impl<A> Functor<A> for Option<A> {
+impl<'a,A> Functor<'a,A> for Option<A> {
 	type Map<B> = Option<B>;
 
 	fn map<B, F: FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
@@ -8,7 +8,7 @@ impl<A> Functor<A> for Option<A> {
 	}
 }
 
-impl<A> Applicative<A> for Option<A> {
+impl<'a,A> Applicative<'a,A> for Option<A> {
 	type Apply<B> = Option<B>;
 
 	fn pure(a: A) -> Self {
@@ -20,7 +20,7 @@ impl<A> Applicative<A> for Option<A> {
 	}
 }
 
-impl<A> Monad<A> for Option<A> {
+impl<'a,A> Monad<'a,A> for Option<A> {
 	type Bind<B> = Option<B>;
 
 	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
