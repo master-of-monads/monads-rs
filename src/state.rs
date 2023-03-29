@@ -1,4 +1,4 @@
-use super::{Functor, Monad};
+use super::Monad;
 
 pub struct State<'a, S, V> {
 	run_state: Box<dyn Fn(S) -> (S, V) + 'a>,
@@ -18,23 +18,6 @@ impl<'a, S: Clone + 'a, V> State<'a, S, V> {
 		let f = move |_| (s.clone(), ());
 		State {
 			run_state: Box::new(f),
-		}
-	}
-}
-
-impl<'a, S: 'a, A: 'a> Functor<'a, A> for State<'a, S, A> {
-	type Target<B> = State<'a, S, B>;
-	fn fmap<B, F>(self, f: F) -> Self::Target<B>
-	where
-		F: Fn(A) -> B + 'a,
-	{
-		let new_f = move |s| {
-			let (new_state, new_value) = self.run_state.as_ref()(s);
-			(new_state, f(new_value))
-		};
-
-		State {
-			run_state: Box::new(new_f),
 		}
 	}
 }
