@@ -1,22 +1,23 @@
 use super::{Functor, Monad};
-use std::rc::Rc;
 
-#[derive(Clone)]
 pub struct State<'a, S, V> {
-	pub run_state: Rc<dyn Fn(S) -> (S, V) + 'a>,
+	run_state: Box<dyn Fn(S) -> (S, V) + 'a>,
 }
 
 impl<'a, S: Clone + 'a, V> State<'a, S, V> {
+	pub fn run(self, s: S) -> (S, V) {
+		(self.run_state)(s)
+	}
 	pub fn get() -> State<'a, S, S> {
 		let f = move |s: S| (s.clone(), s);
 		State {
-			run_state: Rc::new(f),
+			run_state: Box::new(f),
 		}
 	}
 	pub fn set(s: S) -> State<'a, S, ()> {
 		let f = move |_| (s.clone(), ());
 		State {
-			run_state: Rc::new(f),
+			run_state: Box::new(f),
 		}
 	}
 }
@@ -33,7 +34,7 @@ impl<'a, S: 'a, A: 'a> Functor<'a, A> for State<'a, S, A> {
 		};
 
 		State {
-			run_state: Rc::new(new_f),
+			run_state: Box::new(new_f),
 		}
 	}
 }
@@ -50,13 +51,13 @@ impl<'c, S: 'c, C: 'c + Clone> Monad<'c, C> for State<'c, S, C> {
 			return m.run_state.as_ref()(sp);
 		};
 		State {
-			run_state: Rc::new(new_f),
+			run_state: Box::new(new_f),
 		}
 	}
 	fn ret(c: C) -> Self {
 		let f = move |s| (s, c.clone());
 		State {
-			run_state: Rc::new(f),
+			run_state: Box::new(f),
 		}
 	}
 }

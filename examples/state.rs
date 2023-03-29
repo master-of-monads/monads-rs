@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, fmt};
+use std::fmt;
 
 use monads_rs::*;
 
@@ -88,11 +88,6 @@ fn get_current_player() -> State<'static, GameState, Player> {
 	State::ret(state.turn)
 }
 
-#[monadic]
-fn get_turn_counter() -> State<'static, GameState, usize> {
-	let state = State::<'_, GameState, GameState>::get()?;
-	State::ret(state.round_count)
-}
 // Setters
 
 #[monadic]
@@ -107,13 +102,6 @@ fn set_board(board: Board) -> State<'static, GameState, ()> {
 fn switch_current_player() -> State<'static, GameState, ()> {
 	let mut state = State::<'_, GameState, GameState>::get()?;
 	state.turn = state.turn.flip();
-	State::<'_, GameState, ()>::set(state)
-}
-
-#[monadic]
-fn inc_turn_counter(board: Board) -> State<'static, GameState, ()> {
-	let mut state = State::<'_, GameState, GameState>::get()?;
-	state.round_count += 1;
 	State::<'_, GameState, ()>::set(state)
 }
 
@@ -147,6 +135,6 @@ fn program() -> State<'static, GameState, ()> {
 }
 
 fn main() {
-	let state = program().run_state.as_ref()(GameState::new());
+	let state = program().run(GameState::new());
 	println!("{}", state.0);
 }
