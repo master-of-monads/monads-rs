@@ -36,6 +36,11 @@ fn disp(op: Option<Player>) -> String {
 
 type Board = [Option<Player>; 9];
 
+fn board_set_piece(mut b: Board, x: usize, y: usize, p: Player) -> Board {
+	b[x % 3 + y * 3] = Some(p);
+	b
+}
+
 #[derive(Clone, Copy, Debug)]
 struct GameState {
 	board: Board,
@@ -95,10 +100,9 @@ fn get_current_player() -> State<'static, GameState, Player> {
 
 #[monadic]
 fn set_board(board: Board) -> State<'static, GameState, ()> {
-	State::<'_, GameState, GameState>::get().bind(move |mut state| {
-		state.board = board;
-		State::<'_, GameState, ()>::set(state)
-	})
+	let mut state = State::<'_, GameState, GameState>::get()?;
+	state.board = board;
+	State::<'_, GameState, ()>::set(state)
 }
 
 #[monadic]
@@ -110,13 +114,9 @@ fn switch_current_player() -> State<'static, GameState, ()> {
 
 #[monadic]
 fn set_piece(x: usize, y: usize) -> State<'static, GameState, ()> {
-	get_board().bind(move |board| {
-		get_current_player().bind(move |player| {
-			let mut new_board = board.clone();
-			new_board[x % 3 + y * 3] = Some(player);
-			set_board(new_board)
-		})
-	})
+	let board = get_board()?;
+	let player = get_current_player()?;
+	set_board(board_set_piece(board, x, y, player))
 }
 
 #[monadic]
