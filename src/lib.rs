@@ -1,6 +1,6 @@
 //pub mod logging;
 //mod option;
-//mod result;
+mod result;
 mod state;
 pub use monads_rs_codegen::*;
 
