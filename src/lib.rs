@@ -1,13 +1,16 @@
+#[cfg(feature = "logging")]
 pub mod logging;
 mod option;
+#[cfg(feature = "probability")]
+pub mod probability;
 mod result;
-mod state;
+#[cfg(feature = "state")]
+pub mod state;
+
 pub use monads_rs_codegen::*;
 
-pub use state::*;
-
-//pub use option::*;
-//pub use result::*;
+pub use option::*;
+pub use result::*;
 
 /// A `Monad` with a monadic binding operation. Representing the idea of a
 /// monad from mathematics category theory.
