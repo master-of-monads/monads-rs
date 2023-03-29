@@ -1,5 +1,8 @@
+#![cfg(feature = "state")]
+
 use std::fmt;
 
+use monads_rs::state::State;
 use monads_rs::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

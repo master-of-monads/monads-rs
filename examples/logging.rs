@@ -1,3 +1,5 @@
+#![cfg(feature = "logging")]
+
 use monads_rs::logging::Logging;
 use monads_rs::*;
 
