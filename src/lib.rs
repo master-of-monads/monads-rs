@@ -1,4 +1,4 @@
-//pub mod logging;
+pub mod logging;
 mod option;
 mod result;
 mod state;
