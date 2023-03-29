@@ -1,4 +1,4 @@
-use super::{Monad};
+use super::Monad;
 
 /// Simple logging monad.
 pub struct Logging<A> {
@@ -23,7 +23,7 @@ impl<A> Logging<A> {
 	}
 }
 
-impl<'a,A> Monad<'a,A> for Logging<A> {
+impl<'a, A> Monad<'a, A> for Logging<A> {
 	type Bind<B> = Logging<B>;
 
 	/// Applies the function `f` to the value, making sure the logs are a
@@ -36,7 +36,10 @@ impl<'a,A> Monad<'a,A> for Logging<A> {
 	}
 
 	fn ret(val: A) -> Self {
-		return Logging { value: val, log: vec![] }
+		Logging {
+			value: val,
+			log: vec![],
+		}
 	}
 }
 

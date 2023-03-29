@@ -1,14 +1,14 @@
-use super::{Monad};
+use super::Monad;
 
-impl<'a,A, E> Monad<'a,A> for Result<A, E> {
+impl<'a, A, E> Monad<'a, A> for Result<A, E> {
 	type Bind<B> = Result<B, E>;
 
 	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
 		self.and_then(f)
 	}
 
-	fn ret(val : A) -> Self {
-		return Ok(val);
+	fn ret(val: A) -> Self {
+		Ok(val)
 	}
 }
 

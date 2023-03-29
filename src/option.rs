@@ -1,13 +1,13 @@
-use super::{Monad};
+use super::Monad;
 
-impl<'a,A> Monad<'a,A> for Option<A> {
+impl<'a, A> Monad<'a, A> for Option<A> {
 	type Bind<B> = Option<B>;
 
 	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
 		self.and_then(f)
 	}
 
-	fn ret(val : A) -> Self {
+	fn ret(val: A) -> Self {
 		Some(val)
 	}
 }
