@@ -29,3 +29,9 @@ harness = false
 name = "state_benchmark"
 harness = false
 required-features = ["state"]
+
+[[bench]]
+name = "logging_benchmark"
+harness = false
+required-features = ["logging"]
+
