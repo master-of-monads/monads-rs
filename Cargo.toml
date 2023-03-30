@@ -6,9 +6,17 @@ name = "monads-rs"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+rand = { version = "0.8.5", optional = true }
+
 [dependencies.monads-rs-codegen]
 version = "0.1.0"
 path = "codegen"
+
+[features]
+logging = []
+probability = ["dep:rand"]
+state = []
 
 [dev-dependencies]
 criterion = "0.3"

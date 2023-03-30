@@ -1,3 +1,5 @@
+#![cfg(feature = "logging")]
+
 use monads_rs::logging::Logging;
 use monads_rs::*;
 
@@ -14,10 +16,10 @@ fn startup_nuclear_reactor() -> Logging<bool> {
 
 	if core_temp < 200.0 {
 		Logging::log("Reactor core temperature is nominal")?;
-		ret(true)
+		Logging::ret(true)
 	} else {
 		Logging::log("Reactor core is too hot, abort")?;
-		ret(false)
+		Logging::ret(false)
 	}
 }
 
@@ -25,13 +27,13 @@ fn startup_nuclear_reactor() -> Logging<bool> {
 fn run_safety_checks() -> Logging<()> {
 	Logging::log("Running safety checks...")?;
 	Logging::log("All is OK")?;
-	ret(())
+	Logging::ret(())
 }
 
 #[monadic]
 fn activate_warning_lights() -> Logging<()> {
 	Logging::log("Warning lights activated")?;
-	ret(())
+	Logging::ret(())
 }
 
 #[monadic]
@@ -45,5 +47,5 @@ fn get_core_temp() -> Logging<f32> {
 			40.0 + (i as f32)
 		))?;
 	}
-	ret(core_temp_arg / 4.0)
+	Logging::ret(core_temp_arg / 4.0)
 }

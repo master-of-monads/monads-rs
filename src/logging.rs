@@ -1,4 +1,4 @@
-use super::{Applicative, Functor, Monad};
+use super::Monad;
 
 /// Simple logging monad.
 pub struct Logging<A> {
@@ -23,39 +23,7 @@ impl<A> Logging<A> {
 	}
 }
 
-impl<A> Functor<A> for Logging<A> {
-	type Map<B> = Logging<B>;
-
-	/// Applies the function `f` to the value while keeping the logs intact.
-	fn map<B, F: FnOnce(A) -> B>(self, f: F) -> Self::Map<B> {
-		Logging {
-			value: f(self.value),
-			log: self.log,
-		}
-	}
-}
-
-impl<A> Applicative<A> for Logging<A> {
-	type Apply<B> = Logging<B>;
-
-	/// Creates a new `Logging` with the `value` and an empty log.
-	fn pure(value: A) -> Self {
-		Logging {
-			value,
-			log: Vec::new(),
-		}
-	}
-
-	/// Uses the `value` of `f` as a function for mapping the `value` of
-	/// `self`. The logs of `f` are appended to the logs of `self`.
-	fn ap<B, F: FnOnce(A) -> B>(self, mut f: Self::Apply<F>) -> Self::Apply<B> {
-		let mut next = self.map(f.value);
-		next.log.append(&mut f.log);
-		next
-	}
-}
-
-impl<A> Monad<A> for Logging<A> {
+impl<'a, A> Monad<'a, A> for Logging<A> {
 	type Bind<B> = Logging<B>;
 
 	/// Applies the function `f` to the value, making sure the logs are a
@@ -66,12 +34,18 @@ impl<A> Monad<A> for Logging<A> {
 		next.log = self.log;
 		next
 	}
+
+	fn ret(val: A) -> Self {
+		Logging {
+			value: val,
+			log: vec![],
+		}
+	}
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::ret;
 
 	/// Logs the path of the function, and returns a value.
 	fn log_function(a: bool) -> Logging<i32> {
@@ -83,12 +57,12 @@ mod tests {
 			}
 			.bind(|_| {
 				(1..4)
-					.fold(Logging::pure(()), |b, i| {
+					.fold(Logging::ret(()), |b, i| {
 						b.bind(|_| {
 							Logging::log(format!("Logging iteration: {i}"))
 						})
 					})
-					.bind(|_| ret(2))
+					.bind(|_| Logging::ret(2))
 			})
 		})
 	}
