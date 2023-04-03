@@ -4,7 +4,13 @@ use monads_rs::logging::Logging;
 use monads_rs::*;
 
 fn main() {
-	let success = startup_nuclear_reactor().run();
+	let program = startup_nuclear_reactor();
+	let (success, logs) = program.run();
+	println!("Startup success: {}", success);
+	println!("Logs:");
+	for log in logs {
+		println!("\t{}", log);
+	}
 }
 
 #[monadic]
@@ -39,13 +45,13 @@ fn activate_warning_lights() -> Logging<()> {
 #[monadic]
 fn get_core_temp() -> Logging<f32> {
 	let mut core_temp_arg = 0.0;
-	for i in 1..=3 {
-		core_temp_arg += 40.0 + (i as f32);
-		Logging::log(format!(
-			"Reading core temperature sensor #{0}: {1}c",
-			i,
-			40.0 + (i as f32)
-		))?;
-	}
+	// for i in 1..=3 {
+	// 	core_temp_arg += 40.0 + (i as f32);
+	// 	Logging::log(format!(
+	// 		"Reading core temperature sensor #{0}: {1}c",
+	// 		i,
+	// 		40.0 + (i as f32)
+	// 	))?;
+	// }
 	Logging::ret(core_temp_arg / 4.0)
 }

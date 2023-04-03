@@ -5,40 +5,71 @@ use std::fmt;
 use monads_rs::state::State;
 use monads_rs::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-enum Player {
-	CROSS,
-	NOUGHT,
+fn main() {
+	let state = program().run(GameState::new());
+	println!("{}", state.0);
 }
 
-impl Player {
-	fn flip(&self) -> Self {
-		if *self == Player::CROSS {
-			return Player::NOUGHT;
-		} else {
-			return Player::CROSS;
-		}
-	}
+type GameStateState<A> = State<'static, GameState, A>;
+
+#[monadic]
+fn program() -> GameStateState<()> {
+	play_turn(0, 0)?;
+	play_turn(0, 2)?;
+	play_turn(2, 0)?;
+	play_turn(1, 0)?;
+	play_turn(2, 2)?;
+	play_turn(2, 1)?;
+	play_turn(1, 1)
 }
 
-impl fmt::Display for Player {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		match self {
-			Player::CROSS => write!(f, "X"),
-			Player::NOUGHT => write!(f, "O"),
-		}
-	}
+#[monadic]
+fn play_turn(x: usize, y: usize) -> GameStateState<()> {
+	set_piece(x, y)?;
+	switch_current_player()?;
+	inc_round_counter()
 }
 
-fn disp(op: Option<Player>) -> String {
-	format!("{}", op.map_or("_".to_string(), |x| x.to_string()))
+#[monadic]
+fn set_piece(x: usize, y: usize) -> GameStateState<()> {
+	let board = get_board()?;
+	let player = get_current_player()?;
+	set_board(board_set_piece(board, x, y, player))
 }
 
-type Board = [Option<Player>; 9];
+// Getters
+#[monadic]
+fn get_board() -> GameStateState<Board> {
+	let state = GameStateState::<GameState>::get()?;
+	State::ret(state.board)
+}
 
-fn board_set_piece(mut b: Board, x: usize, y: usize, p: Player) -> Board {
-	b[x % 3 + y * 3] = Some(p);
-	b
+#[monadic]
+fn get_current_player() -> GameStateState<Player> {
+	let state = GameStateState::<GameState>::get()?;
+	State::ret(state.turn)
+}
+
+// Setters
+#[monadic]
+fn set_board(board: Board) -> GameStateState<()> {
+	let mut state = GameStateState::<GameState>::get()?;
+	state.board = board;
+	GameStateState::<()>::set(state)
+}
+
+#[monadic]
+fn switch_current_player() -> GameStateState<()> {
+	let mut state = GameStateState::<GameState>::get()?;
+	state.turn = state.turn.flip();
+	GameStateState::<()>::set(state)
+}
+
+#[monadic]
+fn inc_round_counter() -> GameStateState<()> {
+	let mut state = GameStateState::<GameState>::get()?;
+	state.round_count += 1;
+	return GameStateState::<()>::set(state);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -76,68 +107,38 @@ impl fmt::Display for GameState {
 	}
 }
 
-#[monadic]
-fn inc_round_counter() -> State<'static, GameState, ()> {
-	let mut state = State::<'_, GameState, GameState>::get()?;
-	state.round_count += 1;
-	return State::<'_, GameState, ()>::set(state);
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Player {
+	CROSS,
+	NOUGHT,
 }
 
-// Getters
-#[monadic]
-fn get_board() -> State<'static, GameState, Board> {
-	let state = State::<'_, GameState, GameState>::get()?;
-	State::ret(state.board)
+impl Player {
+	fn flip(&self) -> Self {
+		if *self == Player::CROSS {
+			return Player::NOUGHT;
+		} else {
+			return Player::CROSS;
+		}
+	}
 }
 
-#[monadic]
-fn get_current_player() -> State<'static, GameState, Player> {
-	let state = State::<'_, GameState, GameState>::get()?;
-	State::ret(state.turn)
+impl fmt::Display for Player {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		match self {
+			Player::CROSS => write!(f, "X"),
+			Player::NOUGHT => write!(f, "O"),
+		}
+	}
 }
 
-// Setters
-
-#[monadic]
-fn set_board(board: Board) -> State<'static, GameState, ()> {
-	let mut state = State::<'_, GameState, GameState>::get()?;
-	state.board = board;
-	State::<'_, GameState, ()>::set(state)
+fn disp(op: Option<Player>) -> String {
+	format!("{}", op.map_or("_".to_string(), |x| x.to_string()))
 }
 
-#[monadic]
-fn switch_current_player() -> State<'static, GameState, ()> {
-	let mut state = State::<'_, GameState, GameState>::get()?;
-	state.turn = state.turn.flip();
-	State::<'_, GameState, ()>::set(state)
-}
+type Board = [Option<Player>; 9];
 
-#[monadic]
-fn set_piece(x: usize, y: usize) -> State<'static, GameState, ()> {
-	let board = get_board()?;
-	let player = get_current_player()?;
-	set_board(board_set_piece(board, x, y, player))
-}
-
-#[monadic]
-fn play_turn(x: usize, y: usize) -> State<'static, GameState, ()> {
-	set_piece(x, y)?;
-	switch_current_player()?;
-	inc_round_counter()
-}
-
-#[monadic]
-fn program() -> State<'static, GameState, ()> {
-	play_turn(0, 0)?;
-	play_turn(0, 2)?;
-	play_turn(2, 0)?;
-	play_turn(1, 0)?;
-	play_turn(2, 2)?;
-	play_turn(2, 1)?;
-	play_turn(1, 1)
-}
-
-fn main() {
-	let state = program().run(GameState::new());
-	println!("{}", state.0);
+fn board_set_piece(mut b: Board, x: usize, y: usize, p: Player) -> Board {
+	b[x % 3 + y * 3] = Some(p);
+	b
 }

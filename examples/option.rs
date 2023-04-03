@@ -15,5 +15,11 @@ fn aggregate_sensor_readings() -> Option<f32> {
 
 #[monadic]
 fn read_unreliable_sensor() -> Option<f32> {
-	Option::ret(42.0)
+	if Some(false)? {
+		Option::ret(42.0)
+	} else if Some(true)? {
+		Option::ret(24.0)
+	} else {
+		Option::ret(12.0)
+	}
 }
