@@ -1,9 +1,12 @@
 use super::Monad;
 
 impl<'a, A, E> Monad<'a, A> for Result<A, E> {
-	type Bind<B> = Result<B, E>;
+	type Bind<'b, B: 'b> = Result<B, E>;
 
-	fn bind<B, F: FnOnce(A) -> Self::Bind<B>>(self, f: F) -> Self::Bind<B> {
+	fn bind<'b, B: 'b, F: FnOnce(A) -> Self::Bind<'b, B>>(
+		self,
+		f: F,
+	) -> Self::Bind<'b, B> {
 		self.and_then(f)
 	}
 
