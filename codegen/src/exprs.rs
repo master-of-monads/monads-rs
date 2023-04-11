@@ -73,20 +73,43 @@ impl ExprBinder {
 		mut expr: Expr,
 		bind_span: Span,
 	) -> Expr {
-		match expr {
-			Expr::If(ref mut if_expr) if if_expr.else_branch.is_none() => {
-				let else_expr = parse_quote_spanned! { bind_span =>
-					{
-						::monads_rs::ret(())
-					}
-				};
-				if_expr.else_branch =
-					Some((Else(Span::call_site()), Box::new(else_expr)));
+		expr = match expr {
+			Expr::If(if_expr) => {
+				Expr::If(ensure_else_branch(if_expr, bind_span))
 			}
-			_ => {}
-		}
+			expr => expr,
+		};
 
-		self.fold_expr(expr)
+		return self.fold_expr(expr);
+
+		fn ensure_else_branch(mut if_expr: ExprIf, bind_span: Span) -> ExprIf {
+			match if_expr.else_branch {
+				Some((else_token, else_branch))
+					if matches!(*else_branch, Expr::If(_)) =>
+				{
+					if let Expr::If(else_if) = *else_branch {
+						let else_if = ensure_else_branch(else_if, bind_span);
+						let else_expr = Expr::If(else_if);
+						if_expr.else_branch =
+							Some((else_token, Box::new(else_expr)));
+						if_expr
+					} else {
+						unreachable!()
+					}
+				}
+				None => {
+					let else_expr = parse_quote_spanned! { bind_span =>
+						{
+							::monads_rs::Monad::ret((()))
+						}
+					};
+					if_expr.else_branch =
+						Some((Else(bind_span), Box::new(else_expr)));
+					if_expr
+				}
+				_ => if_expr,
+			}
+		}
 	}
 
 	fn handle_else_branch(&mut self, else_expr: Expr) -> Expr {
