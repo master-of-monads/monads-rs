@@ -6,7 +6,8 @@ use syn::{
 	parse_quote, parse_quote_spanned,
 	spanned::Spanned,
 	token::Else,
-	Block, Expr, ExprClosure, ExprIf, ExprPath, ExprTry, Pat, PatIdent,
+	Block, Expr, ExprClosure, ExprForLoop, ExprIf, ExprPath, ExprTry, Pat,
+	PatIdent,
 };
 
 use crate::{blocks::bind_in_block, locals::build_monadic_bind};
@@ -77,6 +78,9 @@ impl ExprBinder {
 			Expr::If(if_expr) => {
 				Expr::If(ensure_else_branch(if_expr, bind_span))
 			}
+			Expr::ForLoop(for_expr) => {
+				self.recurse_into_for_expr(for_expr, bind_span)
+			}
 			expr => expr,
 		};
 
@@ -109,6 +113,22 @@ impl ExprBinder {
 				}
 				_ => if_expr,
 			}
+		}
+	}
+
+	fn recurse_into_for_expr(
+		&mut self,
+		for_expr: ExprForLoop,
+		bind_span: Span,
+	) -> Expr {
+		let iter_expr = for_expr.expr;
+		let pattern = for_expr.pat;
+		let body = self.fold_block(for_expr.body);
+		parse_quote_spanned! { bind_span =>
+			::monads_rs::loops::bind_for_loop(
+				#iter_expr,
+				|#pattern| #body
+			)
 		}
 	}
 

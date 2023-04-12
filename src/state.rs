@@ -1,11 +1,11 @@
 use super::Monad;
 
 pub struct State<'a, S, V> {
-	run_state: Box<dyn Fn(S) -> (S, V) + 'a>,
+	run_state: Box<dyn FnMut(S) -> (S, V) + 'a>,
 }
 
 impl<'a, S: Clone + 'a, V> State<'a, S, V> {
-	pub fn run(self, s: S) -> (S, V) {
+	pub fn run(mut self, s: S) -> (S, V) {
 		(self.run_state)(s)
 	}
 	pub fn get() -> State<'a, S, S> {
@@ -27,11 +27,14 @@ impl<'c, S: 'c, C: 'c + Clone> Monad<'c, C> for State<'c, S, C> {
 
 	/// Sequentially compose two actions, passing any value produced by the
 	/// first as an argument to the second.
-	fn bind<B, F: Fn(C) -> Self::Bind<B> + 'c>(self, f: F) -> Self::Bind<B> {
+	fn bind<B, F: FnMut(C) -> Self::Bind<B> + 'c>(
+		mut self,
+		mut f: F,
+	) -> Self::Bind<B> {
 		let new_f = move |s| {
-			let (sp, vp) = self.run_state.as_ref()(s);
-			let m = f(vp);
-			return m.run_state.as_ref()(sp);
+			let (sp, vp) = self.run_state.as_mut()(s);
+			let mut m = f(vp);
+			return m.run_state.as_mut()(sp);
 		};
 		State {
 			run_state: Box::new(new_f),

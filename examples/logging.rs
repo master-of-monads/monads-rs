@@ -4,7 +4,12 @@ use monads_rs::logging::Logging;
 use monads_rs::*;
 
 fn main() {
-	let success = startup_nuclear_reactor().run();
+	let startup = startup_nuclear_reactor();
+	let (success, logs) = startup.run();
+	println!("Startup success: {success}");
+	for log in logs {
+		println!("{log}");
+	}
 }
 
 #[monadic]
@@ -46,6 +51,7 @@ fn get_core_temp() -> Logging<f32> {
 			i,
 			40.0 + (i as f32)
 		))?;
-	}
+		Logging::ret(())
+	}?;
 	Logging::ret(core_temp_arg / 4.0)
 }
