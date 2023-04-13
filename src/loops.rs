@@ -31,3 +31,30 @@ where
 		NextM::ret(())
 	}
 }
+
+pub fn bind_while_loop<'m, C, F, MBool, M, NextM>(
+	mut condition: C,
+	body: F,
+) -> NextM
+where
+	C: FnMut() -> MBool + 'm,
+	F: FnMut() -> M + 'm,
+	MBool: Monad<'m, bool, Bind<()> = NextM>,
+	M: Monad<'m, (), Bind<()> = NextM>,
+	NextM: Monad<'m, ()>,
+{
+	condition().bind::<(), _>(move |c| {
+		if c {
+			let mut body: F = unsafe { std::mem::transmute_copy(&body) };
+			let condition: C = unsafe { std::mem::transmute_copy(&condition) };
+			body().bind::<(), _>(move |_| {
+				let body: F = unsafe { std::mem::transmute_copy(&body) };
+				let condition: C =
+					unsafe { std::mem::transmute_copy(&condition) };
+				bind_while_loop(condition, body)
+			})
+		} else {
+			NextM::ret(())
+		}
+	})
+}
