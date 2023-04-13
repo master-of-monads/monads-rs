@@ -124,11 +124,11 @@ impl ExprBinder {
 		let iter_expr = for_expr.expr;
 		let pattern = for_expr.pat;
 		let body = self.fold_block(for_expr.body);
+		let closure: Expr = parse_quote_spanned! { body.span() =>
+			|#pattern| #body
+		};
 		parse_quote_spanned! { bind_span =>
-			::monads_rs::loops::bind_for_loop(
-				#iter_expr,
-				|#pattern| #body
-			)
+			::monads_rs::loops::bind_for_loop(#iter_expr, #closure)
 		}
 	}
 
