@@ -7,6 +7,8 @@ mod result;
 #[cfg(feature = "state")]
 pub mod state;
 
+pub mod loops;
+
 pub use monads_rs_codegen::*;
 
 pub use option::*;
@@ -19,7 +21,7 @@ pub trait Monad<'c, C> {
 
 	/// Sequentially compose two actions, passing any value produced by the
 	/// first as an argument to the second.
-	fn bind<B, F: Fn(C) -> Self::Bind<B> + 'c>(self, f: F) -> Self::Bind<B>;
+	fn bind<B, F: FnMut(C) -> Self::Bind<B> + 'c>(self, f: F) -> Self::Bind<B>;
 
 	/// Lift a value into the `Monad`.
 	fn ret(c: C) -> Self;

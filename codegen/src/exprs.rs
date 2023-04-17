@@ -6,10 +6,14 @@ use syn::{
 	parse_quote, parse_quote_spanned,
 	spanned::Spanned,
 	token::Else,
-	Block, Expr, ExprClosure, ExprIf, ExprPath, ExprTry, Pat, PatIdent,
+	Block, Expr, ExprClosure, ExprForLoop, ExprIf, ExprLoop, ExprPath, ExprTry,
+	ExprWhile, Pat, PatIdent,
 };
 
-use crate::{blocks::bind_in_block, locals::build_monadic_bind};
+use crate::{
+	blocks::bind_in_block, locals::build_monadic_bind,
+	loops::recursify_loop_blocks,
+};
 
 pub(crate) fn bind_expr(expr: Expr) -> (ExprBinder, Expr) {
 	let mut binder = ExprBinder::default();
@@ -77,6 +81,15 @@ impl ExprBinder {
 			Expr::If(if_expr) => {
 				Expr::If(ensure_else_branch(if_expr, bind_span))
 			}
+			Expr::ForLoop(for_expr) => {
+				self.recurse_into_for_expr(for_expr, bind_span)
+			}
+			Expr::While(while_expr) => {
+				self.recurse_into_while_expr(while_expr, bind_span)
+			}
+			Expr::Loop(loop_expr) => {
+				self.recurse_into_loop_expr(loop_expr, bind_span)
+			}
 			expr => expr,
 		};
 
@@ -109,6 +122,61 @@ impl ExprBinder {
 				}
 				_ => if_expr,
 			}
+		}
+	}
+
+	fn recurse_into_for_expr(
+		&mut self,
+		for_expr: ExprForLoop,
+		bind_span: Span,
+	) -> Expr {
+		let iter_expr = for_expr.expr;
+		let pattern = for_expr.pat;
+		let body = recursify_loop_blocks(self, for_expr.body);
+		let closure: Expr = parse_quote_spanned! { body.span() =>
+			move |#pattern| #body
+		};
+		parse_quote_spanned! { bind_span =>
+			::monads_rs::loops::bind_for_loop(#iter_expr, #closure)
+		}
+	}
+
+	fn recurse_into_while_expr(
+		&mut self,
+		while_expr: ExprWhile,
+		bind_span: Span,
+	) -> Expr {
+		let cond_expr = *while_expr.cond;
+		let cond_block: Block = parse_quote_spanned! { cond_expr.span() =>
+			{ #cond_expr }
+		};
+		let cond_block = self.fold_block(cond_block);
+		let cond_closure: Expr = parse_quote_spanned! { cond_block.span() =>
+			move || #cond_block
+		};
+		let body = recursify_loop_blocks(self, while_expr.body);
+		let body_closure: Expr = parse_quote_spanned! { body.span() =>
+			move || #body
+		};
+		parse_quote_spanned! { bind_span =>
+			::monads_rs::loops::bind_while_loop(
+				#cond_closure,
+				#body_closure,
+			)
+		}
+	}
+
+	fn recurse_into_loop_expr(
+		&mut self,
+		loop_expr: ExprLoop,
+		bind_span: Span,
+	) -> Expr {
+		let body = recursify_loop_blocks(self, loop_expr.body);
+		let closure: Expr = parse_quote_spanned! { body.span() =>
+			move || #body
+		};
+		parse_quote_spanned! { bind_span =>
+			::monads_rs::loops::bind_loop_loop(#closure)
 		}
 	}
 
