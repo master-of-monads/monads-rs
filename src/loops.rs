@@ -1,17 +1,18 @@
 use super::Monad;
 
-pub fn bind_for_loop<'m, C, M, NextM>(
+pub fn bind_for_loop<'m, C, M, NextM, FinalM>(
 	container: C,
 	body: impl FnMut(C::Item) -> M + 'm,
-) -> NextM
+) -> FinalM
 where
 	C: IntoIterator,
 	C::IntoIter: Clone + 'm,
 	M: Monad<'m, LoopControl, Bind<LoopControl> = NextM>,
-	NextM: Monad<'m, LoopControl>,
+	NextM: Monad<'m, LoopControl, Bind<()> = FinalM>,
+	FinalM: Monad<'m, ()>,
 {
 	let iterator = container.into_iter();
-	recurse_for_loop(iterator, body)
+	recurse_for_loop(iterator, body).bind::<(), _>(|_| FinalM::ret(()))
 }
 
 fn recurse_for_loop<'m, I, F, M, NextM>(mut iterator: I, mut body: F) -> NextM
@@ -35,7 +36,22 @@ where
 	}
 }
 
-pub fn bind_while_loop<'m, C, F, MBool, M, NextM>(
+pub fn bind_while_loop<'m, C, F, MBool, M, NextM, FinalM>(
+	condition: C,
+	body: F,
+) -> FinalM
+where
+	C: FnMut() -> MBool + 'm,
+	F: FnMut() -> M + 'm,
+	MBool: Monad<'m, bool, Bind<LoopControl> = NextM>,
+	M: Monad<'m, LoopControl, Bind<LoopControl> = NextM>,
+	NextM: Monad<'m, LoopControl, Bind<()> = FinalM>,
+	FinalM: Monad<'m, ()>,
+{
+	recurse_while_loop(condition, body).bind::<(), _>(|_| FinalM::ret(()))
+}
+
+fn recurse_while_loop<'m, C, F, MBool, M, NextM>(
 	mut condition: C,
 	body: F,
 ) -> NextM
@@ -57,7 +73,7 @@ where
 					let body: F = unsafe { std::mem::transmute_copy(&body) };
 					let condition: C =
 						unsafe { std::mem::transmute_copy(&condition) };
-					bind_while_loop(condition, body)
+					recurse_while_loop(condition, body)
 				}
 			})
 		} else {
@@ -66,7 +82,17 @@ where
 	})
 }
 
-pub fn bind_loop_loop<'m, F, M, NextM>(mut body: F) -> NextM
+pub fn bind_loop_loop<'m, F, M, NextM, FinalM>(body: F) -> FinalM
+where
+	F: FnMut() -> M + 'm,
+	M: Monad<'m, LoopControl, Bind<LoopControl> = NextM>,
+	NextM: Monad<'m, LoopControl, Bind<()> = FinalM>,
+	FinalM: Monad<'m, ()>,
+{
+	recurse_loop_loop(body).bind::<(), _>(|_| FinalM::ret(()))
+}
+
+pub fn recurse_loop_loop<'m, F, M, NextM>(mut body: F) -> NextM
 where
 	F: FnMut() -> M + 'm,
 	M: Monad<'m, LoopControl, Bind<LoopControl> = NextM>,
@@ -77,7 +103,7 @@ where
 		LoopControl::Break() => NextM::ret(LoopControl::Break()),
 		LoopControl::Continue() => {
 			let body: F = unsafe { std::mem::transmute_copy(&body) };
-			bind_loop_loop(body)
+			recurse_loop_loop(body)
 		}
 	})
 }
