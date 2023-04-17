@@ -156,6 +156,31 @@ fn break_and_continue_in_while_loop() {
 	}
 }
 
+#[test]
+fn break_and_continue_in_loop_loop() {
+	assert_eq!(
+		monadic_break_and_continue_in_loop_loop().run(5.into()),
+		(Loop::new(15, 6), 15)
+	);
+
+	#[monadic]
+	fn monadic_break_and_continue_in_loop_loop() -> LoopState<usize, usize> {
+		let x = get_state()?;
+		set_state(0)?;
+		loop {
+			let sum = get_state()?;
+			set_state(sum + get_i()?)?;
+			inc_i()?;
+			if get_i()? <= x {
+				continue;
+			}
+			break;
+		}?;
+		let sum = get_state()?;
+		State::ret(sum)
+	}
+}
+
 type LoopState<S, T> = State<'static, Loop<S>, T>;
 
 #[monadic]

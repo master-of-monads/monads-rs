@@ -66,6 +66,22 @@ where
 	})
 }
 
+pub fn bind_loop_loop<'m, F, M, NextM>(mut body: F) -> NextM
+where
+	F: FnMut() -> M + 'm,
+	M: Monad<'m, LoopControl, Bind<LoopControl> = NextM>,
+	NextM: Monad<'m, LoopControl>,
+{
+	let result = body();
+	result.bind::<LoopControl, _>(move |control| match control {
+		LoopControl::Break() => NextM::ret(LoopControl::Break()),
+		LoopControl::Continue() => {
+			let body: F = unsafe { std::mem::transmute_copy(&body) };
+			bind_loop_loop(body)
+		}
+	})
+}
+
 #[derive(Clone, Copy)]
 pub enum LoopControl {
 	Break(),

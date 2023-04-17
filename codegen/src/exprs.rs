@@ -6,7 +6,7 @@ use syn::{
 	parse_quote, parse_quote_spanned,
 	spanned::Spanned,
 	token::Else,
-	Block, Expr, ExprClosure, ExprForLoop, ExprIf, ExprPath, ExprTry,
+	Block, Expr, ExprClosure, ExprForLoop, ExprIf, ExprLoop, ExprPath, ExprTry,
 	ExprWhile, Pat, PatIdent,
 };
 
@@ -87,6 +87,9 @@ impl ExprBinder {
 			Expr::While(while_expr) => {
 				self.recurse_into_while_expr(while_expr, bind_span)
 			}
+			Expr::Loop(loop_expr) => {
+				self.recurse_into_loop_expr(loop_expr, bind_span)
+			}
 			expr => expr,
 		};
 
@@ -160,6 +163,20 @@ impl ExprBinder {
 				#cond_closure,
 				#body_closure,
 			)
+		}
+	}
+
+	fn recurse_into_loop_expr(
+		&mut self,
+		loop_expr: ExprLoop,
+		bind_span: Span,
+	) -> Expr {
+		let body = recursify_loop_blocks(self, loop_expr.body);
+		let closure: Expr = parse_quote_spanned! { body.span() =>
+			move || #body
+		};
+		parse_quote_spanned! { bind_span =>
+			::monads_rs::loops::bind_loop_loop(#closure)
 		}
 	}
 
