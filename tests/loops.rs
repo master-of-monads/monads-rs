@@ -30,7 +30,6 @@ fn binds_inside_for_loop() {
 		for i in 1..=input {
 			let sum = State::<_, ()>::get()?;
 			State::<_, ()>::set(sum + i)?;
-			State::ret(())
 		}?;
 		State::ret(())
 	}
@@ -47,7 +46,28 @@ fn binds_and_for_loop() {
 		for i in 1..=x {
 			let sum = State::<_, ()>::get()?;
 			State::<_, ()>::set(sum + i)?;
-			State::ret(())
+		}?;
+		let sum = State::<_, ()>::get()?;
+		State::ret(sum)
+	}
+}
+
+#[test]
+fn break_and_continue_in_for_loop() {
+	assert_eq!(monadic_break_and_continue_in_for_loop().run(5), (15, 15));
+
+	#[monadic]
+	fn monadic_break_and_continue_in_for_loop() -> State<'static, usize, usize>
+	{
+		let x = State::<_, ()>::get()?;
+		State::<_, ()>::set(0)?;
+		for i in 1..=usize::MAX {
+			let sum = State::<_, ()>::get()?;
+			State::<_, ()>::set(sum + i)?;
+			if i < x {
+				continue;
+			}
+			break;
 		}?;
 		let sum = State::<_, ()>::get()?;
 		State::ret(sum)
@@ -85,7 +105,6 @@ fn binds_inside_while_loop() {
 			let sum = get_state()?;
 			set_state(sum + get_i()?)?;
 			inc_i()?;
-			State::ret(())
 		}?;
 		State::ret(())
 	}
@@ -106,7 +125,31 @@ fn binds_and_while_loop() {
 			let sum = get_state()?;
 			set_state(sum + get_i()?)?;
 			inc_i()?;
-			State::ret(())
+		}?;
+		let sum = get_state()?;
+		State::ret(sum)
+	}
+}
+
+#[test]
+fn break_and_continue_in_while_loop() {
+	assert_eq!(
+		monadic_break_and_continue_in_while_loop().run(5.into()),
+		(Loop::new(15, 6), 15)
+	);
+
+	#[monadic]
+	fn monadic_break_and_continue_in_while_loop() -> LoopState<usize, usize> {
+		let x = get_state()?;
+		set_state(0)?;
+		while State::ret(true) {
+			let sum = get_state()?;
+			set_state(sum + get_i()?)?;
+			inc_i()?;
+			if get_i()? <= x {
+				continue;
+			}
+			break;
 		}?;
 		let sum = get_state()?;
 		State::ret(sum)

@@ -51,7 +51,6 @@ fn get_core_temp() -> Logging<f32> {
 			i,
 			40.0 + (i as f32)
 		))?;
-		Logging::ret(())
 	}?;
 	Logging::ret(core_temp_arg / 4.0)
 }

@@ -10,7 +10,10 @@ use syn::{
 	ExprWhile, Pat, PatIdent,
 };
 
-use crate::{blocks::bind_in_block, locals::build_monadic_bind};
+use crate::{
+	blocks::bind_in_block, locals::build_monadic_bind,
+	loops::recursify_loop_blocks,
+};
 
 pub(crate) fn bind_expr(expr: Expr) -> (ExprBinder, Expr) {
 	let mut binder = ExprBinder::default();
@@ -126,9 +129,9 @@ impl ExprBinder {
 	) -> Expr {
 		let iter_expr = for_expr.expr;
 		let pattern = for_expr.pat;
-		let body = self.fold_block(for_expr.body);
+		let body = recursify_loop_blocks(self, for_expr.body);
 		let closure: Expr = parse_quote_spanned! { body.span() =>
-			|#pattern| #body
+			move |#pattern| #body
 		};
 		parse_quote_spanned! { bind_span =>
 			::monads_rs::loops::bind_for_loop(#iter_expr, #closure)
@@ -148,7 +151,7 @@ impl ExprBinder {
 		let cond_closure: Expr = parse_quote_spanned! { cond_block.span() =>
 			move || #cond_block
 		};
-		let body = self.fold_block(while_expr.body);
+		let body = recursify_loop_blocks(self, while_expr.body);
 		let body_closure: Expr = parse_quote_spanned! { body.span() =>
 			move || #body
 		};

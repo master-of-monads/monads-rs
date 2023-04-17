@@ -1,6 +1,7 @@
 mod blocks;
 mod exprs;
 mod locals;
+mod loops;
 mod syntax_errors;
 
 use blocks::bind_in_block;
