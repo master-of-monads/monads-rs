@@ -1,0 +1,11 @@
+error: Explicit returns are not supported, please use implicit returns
+  --> macro_test_cases/early_return_fail.rs:27:14
+   |
+27 |     let foo = { return Identity(false); Identity(true)}?;
+   |                 ^^^^^^^^^^^^^^^^^^^^^^
+
+error: Explicit returns are not supported, please use implicit returns
+  --> macro_test_cases/early_return_fail.rs:34:3
+   |
+34 |         return Identity(false);
+   |         ^^^^^^^^^^^^^^^^^^^^^^
