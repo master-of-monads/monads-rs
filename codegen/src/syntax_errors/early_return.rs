@@ -3,7 +3,7 @@ use syn::{
 	Error, Expr, ExprClosure, Item, ItemFn,
 };
 
-/// Outputs a diagnostics error for all binds (`?`)
+/// Outputs a diagnostics on all explicit returns, the purpose being to avoid any early returns.
 pub(crate) fn report_error_for_early_return(function: ItemFn) -> ItemFn {
 	EarlyReturnReporter::report_function(function)
 }
