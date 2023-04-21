@@ -14,9 +14,9 @@ enum Player {
 impl Player {
 	fn flip(&self) -> Self {
 		if *self == Player::CROSS {
-			return Player::NOUGHT;
+			Player::NOUGHT
 		} else {
-			return Player::CROSS;
+			Player::CROSS
 		}
 	}
 }
@@ -80,7 +80,7 @@ impl fmt::Display for GameState {
 fn inc_round_counter() -> State<'static, GameState, ()> {
 	let mut state = State::<'_, GameState, GameState>::get()?;
 	state.round_count += 1;
-	return State::<'_, GameState, ()>::set(state);
+	State::<'_, GameState, ()>::set(state)
 }
 
 // Getters
